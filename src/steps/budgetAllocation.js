@@ -85,8 +85,12 @@ export function renderBudgetAllocation(container) {
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
 
-    // Reset team rosters
-    const teams = state.teams.map(t => ({ ...t, roster: [], spent: 0 }));
+    // Reset team rosters — auto-add captains at base price
+    const teams = state.teams.map(t => ({
+      ...t,
+      roster: t.captain ? [{ playerId: t.captain, price: basePrice }] : [],
+      spent: t.captain ? basePrice : 0
+    }));
 
     setState({
       budget,

@@ -17,13 +17,20 @@ export function renderAuction(container) {
   const highestBid = currentBids.length > 0 ? currentBids[currentBids.length - 1] : null;
   const currentPrice = highestBid ? highestBid.amount : basePrice;
 
-  // Helper: can team bid?
-  function canTeamBid(idx) {
+  // Helper: max a team can bid on the current player
+  function getMaxBid(idx) {
     const t = teams[idx];
     const remaining = budget - t.spent;
-    if (t.roster.length >= t.maxPlayers) return false;
-    if (remaining < basePrice) return false;
-    return true;
+    const slotsNeeded = Math.max(0, t.minPlayers - t.roster.length);
+    // Reserve for future minimum slots (minus 1 because current player fills one slot)
+    const reserve = Math.max(0, slotsNeeded - 1) * basePrice;
+    return Math.max(0, remaining - reserve);
+  }
+
+  // Helper: can team bid at all?
+  function canTeamBid(idx) {
+    if (teams[idx].roster.length >= teams[idx].maxPlayers) return false;
+    return getMaxBid(idx) >= basePrice;
   }
 
   // Sidebar player list
@@ -34,10 +41,10 @@ export function renderAuction(container) {
     return `
       <div class="auction-sidebar" style="border-top:3px solid var(--${t.color});">
         <h3 style="color:var(--${t.color});">${t.name || `Team ${idx+1}`}</h3>
-        ${capPlayer ? `<div class="sidebar-player" style="background:rgba(245,158,11,0.1);"><span>🏅 ${capPlayer.name}</span><span class="badge ${getSpecialityClass(capPlayer.speciality)}" style="font-size:0.6rem;">${getSpecialityBadge(capPlayer.speciality)}</span></div>` : ''}
         ${t.roster.map(e => {
           const p = players.find(pl => pl.id === e.playerId);
-          return `<div class="sidebar-player"><span>${p ? p.name : '?'}</span><span class="sp-price">₹${e.price}</span></div>`;
+          const isCap = p && p.id === t.captain;
+          return `<div class="sidebar-player" ${isCap ? 'style="background:rgba(245,158,11,0.1);"' : ''}><span>${isCap ? '🏅 ' : ''}${p ? p.name : '?'}</span><span class="sp-price">${isCap ? 'CAP' : '₹' + e.price}</span></div>`;
         }).join('')}
         ${t.roster.length === 0 ? '<div style="font-size:0.75rem;color:var(--text-muted);padding:8px;">No players yet</div>' : ''}
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-secondary);">
@@ -60,6 +67,7 @@ export function renderAuction(container) {
             <div class="bc-name">${teams[0].name || 'Team 1'}</div>
             <div class="bc-amount">₹${budget - teams[0].spent}</div>
             <div class="bc-players">${teams[0].roster.length}/${teams[0].maxPlayers} players</div>
+            <div style="font-size:0.65rem;color:var(--accent-gold);margin-top:2px;">Max bid: ₹${getMaxBid(0)}</div>
           </div>
           <div style="text-align:center;align-self:center;">
             <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;">Round</div>
@@ -69,6 +77,7 @@ export function renderAuction(container) {
             <div class="bc-name">${teams[1].name || 'Team 2'}</div>
             <div class="bc-amount">₹${budget - teams[1].spent}</div>
             <div class="bc-players">${teams[1].roster.length}/${teams[1].maxPlayers} players</div>
+            <div style="font-size:0.65rem;color:var(--accent-gold);margin-top:2px;">Max bid: ₹${getMaxBid(1)}</div>
           </div>
         </div>
 
@@ -194,6 +203,12 @@ export function renderAuction(container) {
     const input = container.querySelector('#bid-amount');
     const amount = parseInt(input.value);
     const minBid = s.currentBids.length > 0 ? s.currentBids[s.currentBids.length - 1].amount + 1 : s.basePrice;
+    // Calculate max bid for this team using reserve logic
+    const t = s.teams[teamIdx];
+    const remaining = s.budget - t.spent;
+    const slotsNeeded = Math.max(0, t.minPlayers - t.roster.length);
+    const reserve = Math.max(0, slotsNeeded - 1) * s.basePrice;
+    const maxAllowed = remaining - reserve;
 
     if (isNaN(amount) || amount < minBid) {
       input.style.borderColor = 'var(--danger)';
@@ -201,9 +216,9 @@ export function renderAuction(container) {
       return;
     }
 
-    const remaining = s.budget - s.teams[teamIdx].spent;
-    if (amount > remaining) {
+    if (amount > maxAllowed) {
       input.style.borderColor = 'var(--danger)';
+      alert(`${t.name} max bid is ₹${maxAllowed} (must reserve ₹${reserve} for ${Math.max(0, slotsNeeded - 1)} more min slots)`);
       setTimeout(() => input.style.borderColor = '', 500);
       return;
     }
