@@ -5,9 +5,10 @@ const defaultState = {
   currentStep: 0,
   players: [],        // { id, name, speciality }
   teams: [
-    { name: '', captain: null, minPlayers: 7, maxPlayers: 11, color: 'team-a', roster: [], spent: 0 },
-    { name: '', captain: null, minPlayers: 7, maxPlayers: 11, color: 'team-b', roster: [], spent: 0 }
+    { name: '', captain: null, color: 'team-a', roster: [], spent: 0 },
+    { name: '', captain: null, color: 'team-b', roster: [], spent: 0 }
   ],
+  minPlayers: 3,       // per team, exclusive of captain, same for both
   budget: 2200,
   basePrice: 50,
   auctionPool: [],     // ids remaining

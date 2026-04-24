@@ -3,7 +3,7 @@ import { playTing, playGavel, playSold, playWhoosh, playUnsold } from '../utils/
 
 export function renderAuction(container) {
   const state = getState();
-  const { teams, players, budget, basePrice, auctionPool, auctionBin, auctionPhase, currentPlayer, currentBids, callState, auctionLog } = state;
+  const { teams, players, budget, basePrice, minPlayers, auctionPool, auctionBin, auctionPhase, currentPlayer, currentBids, callState, auctionLog } = state;
 
   // Check if auction is done
   if (auctionPhase === 'done') {
@@ -21,7 +21,7 @@ export function renderAuction(container) {
   function getMaxBid(idx) {
     const t = teams[idx];
     const remaining = budget - t.spent;
-    const slotsNeeded = Math.max(0, t.minPlayers - t.roster.length);
+    const slotsNeeded = Math.max(0, minPlayers - t.roster.length);
     // Reserve for future minimum slots (minus 1 because current player fills one slot)
     const reserve = Math.max(0, slotsNeeded - 1) * basePrice;
     return Math.max(0, remaining - reserve);
@@ -29,7 +29,6 @@ export function renderAuction(container) {
 
   // Helper: can team bid at all?
   function canTeamBid(idx) {
-    if (teams[idx].roster.length >= teams[idx].maxPlayers) return false;
     return getMaxBid(idx) >= basePrice;
   }
 
@@ -37,18 +36,18 @@ export function renderAuction(container) {
   function renderSidebar(idx) {
     const t = teams[idx];
     const capPlayer = players.find(p => p.id === t.captain);
-    const isA = idx === 0;
     return `
       <div class="auction-sidebar" style="border-top:3px solid var(--${t.color});">
         <h3 style="color:var(--${t.color});">${t.name || `Team ${idx+1}`}</h3>
+        ${capPlayer ? `<div class="sidebar-player" style="background:rgba(245,158,11,0.1);"><span>🏅 ${capPlayer.name}</span><span class="sp-price">CAP</span></div>` : ''}
         ${t.roster.map(e => {
           const p = players.find(pl => pl.id === e.playerId);
-          const isCap = p && p.id === t.captain;
-          return `<div class="sidebar-player" ${isCap ? 'style="background:rgba(245,158,11,0.1);"' : ''}><span>${isCap ? '🏅 ' : ''}${p ? p.name : '?'}</span><span class="sp-price">${isCap ? 'CAP' : '₹' + e.price}</span></div>`;
+          return `<div class="sidebar-player"><span>${p ? p.name : '?'}</span><span class="sp-price">₹${e.price}</span></div>`;
         }).join('')}
         ${t.roster.length === 0 ? '<div style="font-size:0.75rem;color:var(--text-muted);padding:8px;">No players yet</div>' : ''}
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-subtle);font-size:0.7rem;color:var(--text-secondary);">
-          Players: ${t.roster.length}/${t.maxPlayers} (min: ${t.minPlayers})
+          Players: ${t.roster.length} (min: ${minPlayers})
+          ${t.roster.length < minPlayers ? `<span style="color:var(--danger);"> — need ${minPlayers - t.roster.length} more</span>` : `<span style="color:var(--success);"> ✓ min met</span>`}
         </div>
       </div>
     `;
@@ -66,7 +65,7 @@ export function renderAuction(container) {
           <div class="budget-card team-a">
             <div class="bc-name">${teams[0].name || 'Team 1'}</div>
             <div class="bc-amount">₹${budget - teams[0].spent}</div>
-            <div class="bc-players">${teams[0].roster.length}/${teams[0].maxPlayers} players</div>
+            <div class="bc-players">${teams[0].roster.length} players</div>
             <div style="font-size:0.65rem;color:var(--accent-gold);margin-top:2px;">Max bid: ₹${getMaxBid(0)}</div>
           </div>
           <div style="text-align:center;align-self:center;">
@@ -76,7 +75,7 @@ export function renderAuction(container) {
           <div class="budget-card team-b">
             <div class="bc-name">${teams[1].name || 'Team 2'}</div>
             <div class="bc-amount">₹${budget - teams[1].spent}</div>
-            <div class="bc-players">${teams[1].roster.length}/${teams[1].maxPlayers} players</div>
+            <div class="bc-players">${teams[1].roster.length} players</div>
             <div style="font-size:0.65rem;color:var(--accent-gold);margin-top:2px;">Max bid: ₹${getMaxBid(1)}</div>
           </div>
         </div>
@@ -203,10 +202,11 @@ export function renderAuction(container) {
     const input = container.querySelector('#bid-amount');
     const amount = parseInt(input.value);
     const minBid = s.currentBids.length > 0 ? s.currentBids[s.currentBids.length - 1].amount + 1 : s.basePrice;
+
     // Calculate max bid for this team using reserve logic
     const t = s.teams[teamIdx];
     const remaining = s.budget - t.spent;
-    const slotsNeeded = Math.max(0, t.minPlayers - t.roster.length);
+    const slotsNeeded = Math.max(0, s.minPlayers - t.roster.length);
     const reserve = Math.max(0, slotsNeeded - 1) * s.basePrice;
     const maxAllowed = remaining - reserve;
 
@@ -318,14 +318,9 @@ export function renderAuction(container) {
         timestamp: new Date().toISOString()
       }];
 
-      // Check if both teams full or budget done
+      // Check if auction should end
       let phase = s.auctionPhase;
-      let pool = [...s.auctionPool];
-      const bothFull = updatedTeams.every(t => t.roster.length >= t.maxPlayers);
-      const bothBroke = updatedTeams.every(t => (s.budget - t.spent - winner.amount * (t === updatedTeams[winner.teamIdx] ? 0 : 0)) < s.basePrice);
-
-      if (bothFull) phase = 'done';
-      if (pool.length === 0 && s.auctionBin.length === 0) phase = 'done';
+      if (s.auctionPool.length === 0 && s.auctionBin.length === 0) phase = 'done';
 
       setState({
         teams: updatedTeams,

@@ -29,16 +29,6 @@ export function renderTeamSetup(container) {
                 ${players.map(p => `<option value="${p.id}" ${team.captain === p.id ? 'selected' : ''}>${p.name} (${getSpecialityBadge(p.speciality)})</option>`).join('')}
               </select>
             </div>
-            <div style="display:flex;gap:12px;">
-              <div class="form-group" style="flex:1;">
-                <label class="form-label">Min Players</label>
-                <input type="number" class="form-input team-min" data-idx="${i}" value="${team.minPlayers}" min="1" max="20" />
-              </div>
-              <div class="form-group" style="flex:1;">
-                <label class="form-label">Max Players</label>
-                <input type="number" class="form-input team-max" data-idx="${i}" value="${team.maxPlayers}" min="1" max="30" />
-              </div>
-            </div>
           </div>
         `).join('')}
       </div>
@@ -57,12 +47,10 @@ export function renderTeamSetup(container) {
     const updated = [...state.teams];
     container.querySelectorAll('.team-name').forEach(el => { updated[el.dataset.idx].name = el.value.trim(); });
     container.querySelectorAll('.team-captain').forEach(el => { updated[el.dataset.idx].captain = el.value ? parseInt(el.value) : null; });
-    container.querySelectorAll('.team-min').forEach(el => { updated[el.dataset.idx].minPlayers = parseInt(el.value) || 1; });
-    container.querySelectorAll('.team-max').forEach(el => { updated[el.dataset.idx].maxPlayers = parseInt(el.value) || 11; });
     setState({ teams: updated });
   }
 
-  container.querySelectorAll('.team-name, .team-captain, .team-min, .team-max').forEach(el => {
+  container.querySelectorAll('.team-name, .team-captain').forEach(el => {
     el.addEventListener('change', saveTeams);
     el.addEventListener('input', saveTeams);
   });
@@ -85,11 +73,6 @@ export function renderTeamSetup(container) {
     }
     if (t[0].captain === t[1].captain) {
       errEl.textContent = 'Captains must be different players.';
-      errEl.style.display = 'block';
-      return false;
-    }
-    if (t[0].minPlayers > t[0].maxPlayers || t[1].minPlayers > t[1].maxPlayers) {
-      errEl.textContent = 'Min players cannot exceed max players.';
       errEl.style.display = 'block';
       return false;
     }
