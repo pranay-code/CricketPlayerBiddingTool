@@ -105,11 +105,11 @@ export function renderAuction(container) {
           <div class="bid-controls">
             ${callState < 3 ? `
               <div class="bid-row">
-                <button class="btn btn-team-a btn-lg" id="btn-bid-0" ${!canTeamBid(0) || (highestBid && highestBid.teamIdx === 0 && callState === 0) ? 'disabled' : ''}>
+                <button class="btn btn-team-a btn-lg" id="btn-bid-0" ${!canTeamBid(0) || (highestBid && highestBid.teamIdx === 0) ? 'disabled' : ''}>
                   ${teams[0].name || 'Team 1'} Bids
                 </button>
                 <input type="number" class="bid-input" id="bid-amount" value="${highestBid ? highestBid.amount + 10 : basePrice}" min="${highestBid ? highestBid.amount + 1 : basePrice}" step="10" />
-                <button class="btn btn-team-b btn-lg" id="btn-bid-1" ${!canTeamBid(1) || (highestBid && highestBid.teamIdx === 1 && callState === 0) ? 'disabled' : ''}>
+                <button class="btn btn-team-b btn-lg" id="btn-bid-1" ${!canTeamBid(1) || (highestBid && highestBid.teamIdx === 1) ? 'disabled' : ''}>
                   ${teams[1].name || 'Team 2'} Bids
                 </button>
               </div>
