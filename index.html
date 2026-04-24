@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Adani Digital Premier League — Interactive IPL-style player auction between two teams with live bidding, sound effects, and professional PDF reports." />
+  <title>Adani Digital Premier League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Animated background orbs -->
+    <div class="bg-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Top bar with title -->
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-icon">🏏</span>
+        <h1>Adani Digital Premier League</h1>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn btn-secondary btn-sm">🌓 Toggle Theme</button>
+      </div>
+    </header>
+
+    <!-- Stepper -->
+    <nav id="stepper" class="stepper"></nav>
+
+    <!-- Main content area -->
+    <main id="main-content" class="main-content"></main>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
