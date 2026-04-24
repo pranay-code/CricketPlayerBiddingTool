@@ -84,37 +84,52 @@ export function generateReport(state) {
 
   // ===== INFOGRAPHIC TIMELINE =====
   doc.addPage();
-  currentY = 20;
 
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, pageWidth, 25, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(18);
-  doc.text('AUCTION FLOW INFOGRAPHIC', pageWidth / 2, 16, { align: 'center' });
+  function drawTimelineHeader() {
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 25, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('AUCTION FLOW INFOGRAPHIC', pageWidth / 2, 16, { align: 'center' });
+    return 38; // return starting Y after header
+  }
 
-  currentY = 40;
+  currentY = drawTimelineHeader();
   
   state.auctionLog.forEach((event, index) => {
-    // Check if we need a new page
-    if (currentY > pageHeight - 40) {
+    // Calculate height needed for this event block
+    const blockHeight = event.bids && event.bids.length > 0 ? 38 : 30;
+
+    // Check if we need a new page (leave margin for footer)
+    if (currentY + blockHeight > pageHeight - 25) {
       doc.addPage();
-      currentY = 20;
+      currentY = drawTimelineHeader();
     }
 
-    // Draw Event Container
+    // Draw timeline vertical line (connect to next if not last)
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.5);
-    doc.line(20, currentY, 20, currentY + 30); // Timeline vertical line
+    if (index < state.auctionLog.length - 1) {
+      doc.line(20, currentY, 20, currentY + blockHeight);
+    }
     
     // Event node circle
-    doc.setFillColor(...primaryColor);
+    const nodeColor = event.finalPrice ? (event.wonBy === teamA.name ? teamAColor : teamBColor) : [150, 150, 150];
+    doc.setFillColor(...nodeColor);
     doc.circle(20, currentY, 3, 'F');
     
     // Content box
     doc.setDrawColor(230, 230, 230);
     doc.setFillColor(250, 250, 250);
-    doc.roundedRect(30, currentY - 5, pageWidth - 50, 25, 2, 2, 'FD');
+    doc.roundedRect(30, currentY - 5, pageWidth - 50, blockHeight - 8, 2, 2, 'FD');
     
+    // Round number
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`#${index + 1}`, 13, currentY + 1, { align: 'center' });
+
     // Player Info
     doc.setTextColor(50, 50, 50);
     doc.setFontSize(11);
@@ -135,23 +150,32 @@ export function generateReport(state) {
       doc.setFontSize(14);
       doc.text(`Rs. ${event.finalPrice}`, pageWidth - 35, currentY + 12, { align: 'right' });
       
-      // Bidding steps visualization
+      // Bidding steps visualization (show last 6 bids that fit)
+      const maxBidChips = Math.min(event.bids.length, 6);
+      const visibleBids = event.bids.slice(-maxBidChips);
       let bidX = 35;
-      event.bids.slice(-5).forEach((bid, i) => { // show last 5 bids
+      visibleBids.forEach((bid) => {
         const bColor = bid.team === teamA.name ? teamAColor : teamBColor;
         doc.setFillColor(...bColor);
-        doc.roundedRect(bidX, currentY + 13, 20, 5, 1, 1, 'F');
+        doc.roundedRect(bidX, currentY + 14, 20, 5, 1, 1, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(6);
-        doc.text(`Rs. ${bid.amount}`, bidX + 10, currentY + 16.5, { align: 'center' });
+        doc.text(`Rs. ${bid.amount}`, bidX + 10, currentY + 17.5, { align: 'center' });
         bidX += 22;
       });
+      if (event.bids.length > maxBidChips) {
+        doc.setTextColor(150, 150, 150);
+        doc.setFontSize(6);
+        doc.text(`+${event.bids.length - maxBidChips} more`, bidX + 5, currentY + 17.5);
+      }
     } else {
       doc.setTextColor(150, 150, 150);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(10);
       doc.text('UNSOLD', pageWidth - 35, currentY + 8, { align: 'right' });
     }
 
-    currentY += 35;
+    currentY += blockHeight;
   });
 
   // Footer
